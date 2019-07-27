@@ -1,0 +1,29 @@
+body {
+	margin: 0;
+	padding: 0;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+#wrapper {
+	width: 50%;
+	margin-left: 25%;
+}
+ul#posts-list {
+	padding-left: 0;
+}
+li#posts-list-elem {
+	margin: lem 0;
+	list-style: none;
+}
+article time, article span {
+	display: table-cell;
+}
+article time {
+	width: 10em;
+}
+article a {
+	font-weight: bold;
+}
+article small {
+	display: inline-block;
+}

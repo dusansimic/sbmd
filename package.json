@@ -1,0 +1,12 @@
+{
+  "name": "sbmd",
+  "version": "0.0.0",
+  "description": "Static Blog Markdown",
+  "main": "index.js",
+  "repository": "https://github.com/dusansimic/sbmd",
+  "author": "Dušan Simić <dusan.simic1810@gmail.com> (dusansimic.me)",
+  "license": "MIT",
+  "dependencies": {
+    "showdown": "^1.9.0"
+  }
+}
