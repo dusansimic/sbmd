@@ -1,12 +1,22 @@
 {
   "name": "sbmd",
-  "version": "0.0.0",
-  "description": "Static Blog Markdown",
+  "version": "0.0.1",
+  "description": "Static Blog using Markdown",
   "main": "index.js",
   "repository": "https://github.com/dusansimic/sbmd",
   "author": "Dušan Simić <dusan.simic1810@gmail.com> (dusansimic.me)",
   "license": "MIT",
   "dependencies": {
+    "meow": "^5.0.0",
     "showdown": "^1.9.0"
-  }
+  },
+  "bin": {
+    "sbmd": "index.js"
+  },
+  "keywords": [
+    "cli",
+    "static",
+    "blog",
+    "markdown"
+  ]
 }

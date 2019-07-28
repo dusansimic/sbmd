@@ -1,7 +1,37 @@
+#!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
 const util = require('util');
 const showdown = require('showdown');
+const meow = require('meow');
+
+const cli = meow(`
+	Usage
+		$ sbmd [options]
+
+	Options
+		--templates, -t    Pick templates directory
+		--posts, -p        Pick posts directory
+		--static, -s       Pick output directory
+`, {
+	flags: {
+		templates: {
+			type: 'string',
+			alias: 't',
+			default: path.join(__dirname, 'templates')
+		},
+		posts: {
+			type: 'string',
+			alias: 'p',
+			default: path.join(process.cwd())
+		},
+		static: {
+			type: 'string',
+			alias: 's',
+			default: path.join(process.cwd(), '..', 'static')
+		}
+	}
+});
 
 const readdir = util.promisify(fs.readdir);
 const readFile = util.promisify(fs.readFile);
@@ -10,11 +40,11 @@ const writeFile = util.promisify(fs.writeFile);
 const converter = new showdown.Converter();
 converter.setOption('tasklists', true);
 
-const blogPostsPath = path.join(__dirname, 'posts');
-if (!fs.existsSync('static')) fs.mkdirSync('static');
-if (!fs.existsSync('static/post')) fs.mkdirSync('static/post');
-const blogStaticPath = path.join(__dirname, 'static');
-const blogTemplatesPath = path.join(__dirname, 'templates');
+const blogPostsPath = cli.flags.posts;
+const blogStaticPath = cli.flags.static;
+const blogTemplatesPath = cli.flags.templates;
+if (!fs.existsSync(blogStaticPath)) fs.mkdirSync(blogStaticPath);
+if (!fs.existsSync(path.join(blogStaticPath, 'post'))) fs.mkdirSync(path.join(blogStaticPath, 'post'));
 fs.createReadStream(path.join(blogTemplatesPath, 'style.css')).pipe(fs.createWriteStream(path.join(blogStaticPath, 'style.css')));
 
 (async () => {
@@ -23,6 +53,7 @@ fs.createReadStream(path.join(blogTemplatesPath, 'style.css')).pipe(fs.createWri
 		const files = await readdir(blogPostsPath);
 
 		for (const file of files) {
+			if (path.extname(file) !== '.md') continue;
 			const data = await readFile(path.join(blogPostsPath, file), { encoding: 'utf8' });
 
 			const dataSplit = data.split('\n');
@@ -36,7 +67,7 @@ fs.createReadStream(path.join(blogTemplatesPath, 'style.css')).pipe(fs.createWri
 			await writeFile(path.join(blogStaticPath, htmlFilename), htmlData);
 			console.log(htmlFilename);
 
-			postsList.push({
+			postsList.unshift({
 				title: headingData[0],
 				author: headingData[1],
 				date: headingData[2],
@@ -44,8 +75,6 @@ fs.createReadStream(path.join(blogTemplatesPath, 'style.css')).pipe(fs.createWri
 				file: htmlFilename
 			});
 		}
-
-		postsList = postsList.reverse();
 
 		let postsListString = '';
 		for (const post of postsList) {
