@@ -4,6 +4,7 @@ const path = require('path');
 const util = require('util');
 const showdown = require('showdown');
 const meow = require('meow');
+const prompts = require('prompts');
 
 const cli = meow(`
 	Usage
@@ -13,6 +14,8 @@ const cli = meow(`
 		--templates, -t    Pick templates directory
 		--posts, -p        Pick posts directory
 		--static, -s       Pick output directory
+		--flavour, -f      Pick markdown flavour (original, vanilla, github, ghost,
+		                   allOn)
 `, {
 	flags: {
 		templates: {
@@ -29,6 +32,11 @@ const cli = meow(`
 			type: 'string',
 			alias: 's',
 			default: path.join(process.cwd(), '..', 'static')
+		},
+		flavour: {
+			type: 'string',
+			alias: 'f',
+			default: 'github'
 		}
 	}
 });
@@ -39,6 +47,7 @@ const writeFile = util.promisify(fs.writeFile);
 
 const converter = new showdown.Converter();
 converter.setOption('tasklists', true);
+converter.setFlavor(cli.flags.flavour);
 
 const blogPostsPath = cli.flags.posts;
 const blogStaticPath = cli.flags.static;
@@ -51,6 +60,17 @@ fs.createReadStream(path.join(blogTemplatesPath, 'style.css')).pipe(fs.createWri
 	try {
 		let postsList = [];
 		const files = await readdir(blogPostsPath);
+
+		if (files.filter(file => path.extname(file) === '.md').length < 1) {
+			const { value } = await prompts({
+				type: 'confirm',
+				name: 'value',
+				message: 'No posts found! Continue?',
+				initial: false
+			});
+
+			if (!value) process.exit(0);
+		}
 
 		for (const file of files) {
 			if (path.extname(file) !== '.md') continue;
