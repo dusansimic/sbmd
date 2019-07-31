@@ -14,8 +14,7 @@ const cli = meow(`
 		--templates, -t    Pick templates directory
 		--posts, -p        Pick posts directory
 		--static, -s       Pick output directory
-		--flavour, -f      Pick markdown flavour (original, vanilla, github, ghost,
-		                   allOn)
+		--flavour, -f      Pick markdown flavour
 `, {
 	flags: {
 		templates: {
@@ -47,6 +46,10 @@ const writeFile = util.promisify(fs.writeFile);
 
 const converter = new showdown.Converter();
 converter.setOption('tasklists', true);
+if (!['original', 'github', 'ghost', 'vanilla', 'allOn'].includes(cli.flags.flavour)) {
+	console.error(`Sorry but '${cli.flags.flavour}' is not a valid Markdown flavour.`);
+	process.exit(1)
+}
 converter.setFlavor(cli.flags.flavour);
 
 const blogPostsPath = cli.flags.posts;
