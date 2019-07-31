@@ -5,6 +5,7 @@ const util = require('util');
 const showdown = require('showdown');
 const meow = require('meow');
 const prompts = require('prompts');
+const YAML = require('yamljs');
 
 const cli = meow(`
 	Usage
@@ -79,29 +80,41 @@ fs.createReadStream(path.join(blogTemplatesPath, 'style.css')).pipe(fs.createWri
 			if (path.extname(file) !== '.md') continue;
 			const data = await readFile(path.join(blogPostsPath, file), { encoding: 'utf8' });
 
-			const dataSplit = data.split('\n');
-			const headingData = dataSplit.splice(0, 4);
-			const dataJoined = dataSplit.join('\n');
-			const parsedData = converter.makeHtml(dataJoined);
+			const linesArray = data.split('\n');
+			let metaBreakIndex = 0;
+			for (const i in linesArray) {
+				if (linesArray[i] == '---') {
+					metaBreakIndex = parseInt(i);
+					break;
+				}
+			}
+			const postMetaData = YAML.parse(linesArray.splice(0, metaBreakIndex + 1).splice(0, metaBreakIndex).join('\n'));
+			if (!postMetaData.hasOwnProperty('title')) {
+				console.error(`Seems like your post '${file}' doesn't have a post title.`);
+				process.exit(1);
+			} else if (!postMetaData.hasOwnProperty('date')) {
+				console.error(`Seems like your post '${file}' doesn't have a date.`);
+				process.exit(1);
+			}
+			const postMarkdown = linesArray.join('\n');
+			const parsedData = converter.makeHtml(postMarkdown);
 
-			const htmlData = (await readFile(path.join(blogTemplatesPath, 'post.tmpl.html'), { encoding: 'utf8' })).replace(/{{postTitle}}/g, headingData[0]).replace(/{{author}}/g, headingData[1]).replace(/{{date}}/g, headingData[2]).replace(/{{time}}/g, headingData[3]).replace(/{{postBody}}/g, parsedData);
+			const metadataString = `${postMetaData.hasOwnProperty('author') ? `by ${postMetaData.author} ` : ''}on ${postMetaData.date} ${postMetaData.hasOwnProperty('time') ? `at ${postMetaData.time}` : ''}`;
+			const htmlData = (await readFile(path.join(blogTemplatesPath, 'post.tmpl.html'), { encoding: 'utf8' })).replace(/{{postTitle}}/g, postMetaData.title).replace(/{{metadata}}/g, metadataString).replace(/{{postBody}}/g, parsedData);
 			const htmlFilename = `post/${file.slice(0, file.length - 3)}.html`;
 
 			await writeFile(path.join(blogStaticPath, htmlFilename), htmlData);
 			console.log(htmlFilename);
 
 			postsList.unshift({
-				title: headingData[0],
-				author: headingData[1],
-				date: headingData[2],
-				time: headingData[3],
+				...postMetaData,
 				file: htmlFilename
 			});
 		}
 
 		let postsListString = '';
 		for (const post of postsList) {
-			const postString = `<li id="posts-list-elem"><article><time>${post.date} ${post.time}</time><span><a href="${post.file}">${post.title}</a> <small>by ${post.author}</small></span></article></li>`;
+			const postString = `<li id="posts-list-elem"><article><time>${post.date} ${post.time}</time><span><a href="${post.file}">${post.title}</a>${post.hasOwnProperty('author') ? ` <small>by ${post.author}</small>` : ''}</span></article></li>`;
 			postsListString += postString;
 		}
 
